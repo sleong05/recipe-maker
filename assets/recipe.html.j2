@@ -1,0 +1,154 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face { font-family: "Inter"; font-weight: 400; src: url("fonts/inter-latin-400-normal.woff"); }
+  @font-face { font-family: "Inter"; font-weight: 600; src: url("fonts/inter-latin-600-normal.woff"); }
+  @font-face { font-family: "Inter"; font-weight: 700; src: url("fonts/inter-latin-700-normal.woff"); }
+  @font-face { font-family: "Fraunces"; font-weight: 600; src: url("fonts/fraunces-latin-600-normal.woff"); }
+  @font-face { font-family: "Fraunces"; font-style: italic; src: url("fonts/fraunces-latin-400-italic.woff"); }
+
+  :root {
+    --ink: #1f1d1a;
+    --muted: #6b645c;
+    --accent: #b5562b;
+    --panel: #f6f1ea;
+    --line: #e2d9cd;
+  }
+
+  @page {
+    size: letter;
+    margin: 0.5in 0.5in 0.55in;
+    @bottom-left {
+      content: "{{ source }}";
+      font: 7pt "Inter", "DejaVu Sans", sans-serif;
+      color: #9a9289;
+    }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: "Inter", "DejaVu Sans", sans-serif;
+    font-size: {{ font_size }}pt;
+    line-height: 1.38;
+    color: var(--ink);
+  }
+
+  /* Header */
+  header { border-bottom: 2px solid var(--accent); padding-bottom: 0.7em; margin-bottom: 1.1em; }
+  h1 { font-family: "Fraunces", "DejaVu Serif", serif; font-weight: 600; font-size: 2.3em; line-height: 1.1; }
+  .summary { font-family: "Fraunces", "DejaVu Serif", serif; font-style: italic; color: var(--muted); font-size: 1.1em; margin-top: 0.2em; }
+  .meta { display: flex; gap: 1.6em; margin-top: 0.6em; }
+  .meta div { font-size: 0.95em; }
+  .meta span {
+    display: block; font-size: 0.68em; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--accent);
+  }
+
+  /* Two columns */
+  main { display: flex; gap: 0.22in; align-items: flex-start; }
+  aside { width: 2.45in; flex-shrink: 0; background: var(--panel); border-radius: 8px; padding: 0.9em 1em; }
+  section.steps { flex: 1; }
+
+  h2 {
+    font-size: 0.78em; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 0.55em;
+  }
+  h3 { font-family: "Fraunces", "DejaVu Serif", serif; font-style: italic; font-weight: 400; font-size: 1.05em; margin: 0.7em 0 0.25em; }
+  h3:first-of-type { margin-top: 0; }
+
+  /* Ingredients */
+  ul { list-style: none; }
+  .ingredients li { padding: 0.24em 0; border-bottom: 1px dotted var(--line); }
+  .ingredients li:last-child { border-bottom: none; }
+  .qty { font-weight: 700; }
+  .note { color: var(--muted); font-size: 0.88em; }
+
+  /* Equipment checklist */
+  .equipment { margin-top: 1.1em; padding-top: 0.9em; border-top: 1px solid var(--line); }
+  .equipment li { padding: 0.18em 0 0.18em 1.35em; position: relative; }
+  .equipment li::before {
+    content: ""; position: absolute; left: 0; top: 0.42em;
+    width: 0.72em; height: 0.72em; border: 1.2px solid var(--muted); border-radius: 2px;
+  }
+
+  /* Steps: one box each */
+  .step {
+    display: flex; gap: 0.75em; align-items: flex-start;
+    border: 1px solid var(--line); border-radius: 8px; padding: 0.5em 0.75em;
+    margin-bottom: 0.38em; break-inside: avoid;
+  }
+  .num {
+    flex-shrink: 0; width: 1.75em; height: 1.75em; border-radius: 50%;
+    background: var(--accent); color: white; font-weight: 700; font-size: 0.95em;
+    text-align: center; line-height: 1.75em;
+  }
+  .steps h3 { margin: 0.8em 0 0.4em; }
+  .steps h3:first-of-type { margin-top: 0; }
+
+  /* Tips */
+  .tips { border: 1.5px dashed var(--accent); border-radius: 8px; padding: 0.6em 0.8em; margin-top: 0.8em; break-inside: avoid; }
+  .tips h2 { margin-bottom: 0.3em; }
+  .tips li { padding-left: 1em; position: relative; margin-top: 0.2em; }
+  .tips li::before { content: "–"; position: absolute; left: 0; color: var(--accent); }
+</style>
+</head>
+<body>
+  <header>
+    <h1>{{ recipe.title }}</h1>
+    {% if recipe.summary %}<p class="summary">{{ recipe.summary }}</p>{% endif %}
+    {% set meta = [("Serves", recipe.servings), ("Prep", recipe.prep_time), ("Cook", recipe.cook_time)] | selectattr(1) | list %}
+    {% if meta %}
+    <div class="meta">
+      {% for label, value in meta %}<div><span>{{ label }}</span>{{ value }}</div>{% endfor %}
+    </div>
+    {% endif %}
+  </header>
+
+  <main>
+    <aside>
+      <div class="ingredients">
+        <h2>Ingredients</h2>
+        {% for group in recipe.ingredient_groups %}
+          {% if group.name and recipe.ingredient_groups | length > 1 %}<h3>{{ group.name }}</h3>{% endif %}
+          <ul>
+          {% for item in group.items %}
+            <li>
+              {% if item.quantity %}<span class="qty">{{ item.quantity | fractions }}{% if item.unit %} {{ item.unit }}{% endif %}</span> {% endif %}{{ item.name }}{% if item.note %}<span class="note">, {{ item.note | fractions }}</span>{% endif %}
+            </li>
+          {% endfor %}
+          </ul>
+        {% endfor %}
+      </div>
+
+      {% if recipe.equipment %}
+      <div class="equipment">
+        <h2>You'll need</h2>
+        <ul>{% for tool in recipe.equipment %}<li>{{ tool | sentence | fractions }}</li>{% endfor %}</ul>
+      </div>
+      {% endif %}
+    </aside>
+
+    <section class="steps">
+      <h2>Instructions</h2>
+      {% set counter = namespace(n=0) %}
+      {% for group in recipe.step_groups %}
+        {% if group.name and recipe.step_groups | length > 1 %}<h3>{{ group.name }}</h3>{% endif %}
+        {% for step in group.steps %}
+          {% set counter.n = counter.n + 1 %}
+          <div class="step"><div class="num">{{ counter.n }}</div><div>{{ step | fractions }}</div></div>
+        {% endfor %}
+      {% endfor %}
+
+      {% if recipe.tips %}
+      <div class="tips">
+        <h2>Tips</h2>
+        <ul>{% for tip in recipe.tips %}<li>{{ tip | fractions }}</li>{% endfor %}</ul>
+      </div>
+      {% endif %}
+    </section>
+  </main>
+</body>
+</html>
