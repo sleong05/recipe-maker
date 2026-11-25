@@ -26,9 +26,9 @@ flowchart TD
     class STOP stop
 ```
 
-Shaded steps call the LLM through the provider chain (`complete(prompt, schema)`: Gemini free → Groq → OpenRouter → Gemini paid, skipping any provider that fails); step 6 calls it only to condense. The rest is plain code. Every step reads and extends `output/<title>/pipeline.json`.
-
-The provider chain exists so the project costs nothing to run and keeps working as free tiers change. Free providers go first and the paid Gemini key is a last resort. If a free tier is cut (as Ollama Cloud's was in Oct 2026) or a provider goes down, the pipeline moves on to the next one. Adding another provider or a local model is one new class, with no change to the steps.
+Shaded steps call the LLM through a chain of providers because I am cheap and don't want to pay for my LLM usage. 
+Models go down all the time as well so this can help the system be a bit more rebust. Future work will run a local LLM when
+it won't fry my computer.
 
 ## Steps and decisions
 
