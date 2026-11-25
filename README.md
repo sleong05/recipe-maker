@@ -9,14 +9,14 @@ The pipeline turns a YouTube cooking video URL into a one-page, US Letter recipe
 ```mermaid
 flowchart TD
     URL([YouTube video URL]) --> S1
-    S1["1. Fetch video data<br/><small>metadata, description, captions</small>"] --> S2
-    S2["2. Check it is a recipe<br/><small>one dish? pick recipe links</small>"]
+    S1["1. Fetch video data<br/>"] --> S2
+    S2["2. Check it is a recipe<br/><small> extract recipe links</small>"]
     S2 -. not one dish or not a recipe .-> STOP([stop])
     S2 --> S3
     S3["3. Scrape recipe page<br/><small></small>"] --> S4
     S4["4. Extract recipe from collected text<br/><small></small>"] --> S5
-    S5["5. Validate recipe<br/><small>ingredient + amount checks → validator → generator </small>"] --> S6
-    S5 -- "errors → fixer,<br/>up to 2 rounds" --> S5
+    S5["5. Validate recipe<br/><small> </small>"] --> S6
+    S5 -- "errors/issues → fixer,<br/>up to 2 rounds" --> S5
     S6["6. Render PDF<br/><small>Jinja2</small>"] --> PDF([One-page recipe card PDF])
     S6 -- "overflows at 8.5 pt →<br/>LLM condenses, up to 2x" --> S6
 
