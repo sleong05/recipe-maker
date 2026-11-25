@@ -27,7 +27,7 @@ flowchart TD
 ```
 
 Shaded steps call the LLM through a chain of providers because I am cheap and don't want to pay for my LLM usage. 
-Models go down all the time as well so this can help the system be a bit more rebust. Future work will run a local LLM when
+Models go down all the time as well so this can help the system be a bit more robust. Future work will run a local LLM when
 it won't fry my computer.
 
 ## Steps and decisions
