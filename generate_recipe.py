@@ -3,8 +3,8 @@
 Usage:
     python generate_recipe.py <youtube_url>
 
-Each step reads and updates output/<video_id>/pipeline.json; the PDF is saved
-next to it as recipe.pdf. Stops at the first step that fails or rejects the video.
+Each step reads and updates output/<video-title>/pipeline.json; the PDF is saved
+next to it as <video-title>.pdf. Stops at the first step that fails or rejects the video.
 """
 
 import argparse
@@ -20,7 +20,7 @@ import extract_video_data
 import render_recipe
 import scrape_recipe
 import validate_recipe
-from common import video_dir
+from common import load_state
 
 STEPS = [
     ("Fetch video data", extract_video_data),
@@ -44,7 +44,7 @@ def generate_recipe(url: str) -> None:
                 if isinstance(e.code, str):
                     print(e.code)
                 sys.exit(f"\nStopped at step {number} ({label}).")
-    print(f"\nDone in {time.time() - start:.0f}s -> {video_dir(url) / 'recipe.pdf'}")
+    print(f"\nDone in {time.time() - start:.0f}s -> {load_state(url).render.pdf}")
 
 
 def main() -> None:

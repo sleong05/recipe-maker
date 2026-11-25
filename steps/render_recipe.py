@@ -99,7 +99,8 @@ def run(url: str) -> None:
         document = render(recipe, font_size, source)
         print(f"Warning: still {len(document.pages)} pages after {condense_rounds} condense rounds.")
 
-    pdf_path = video_dir(url) / "recipe.pdf"
+    folder = video_dir(url)
+    pdf_path = folder / f"{folder.name}.pdf"
     document.write_pdf(pdf_path)
 
     # Keep the stored recipe in sync with what was printed.

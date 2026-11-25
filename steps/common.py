@@ -1,5 +1,6 @@
 """Helpers shared by all steps: every step takes a YouTube URL and finds its files from it."""
 
+import json
 import re
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -36,9 +37,37 @@ def video_id_from_url(url: str) -> str:
     return candidate
 
 
+def slugify(title: str) -> str:
+    """Folder-safe name from a video title: 'Shakshuka | Basics with Babish' -> 'shakshuka'."""
+    title = title.split("|")[0]  # Drop channel names and keyword tails after a "|".
+    slug = re.sub(r"[^a-z0-9]+", "-", title.lower().replace("'", "")).strip("-")
+    return slug[:60].rstrip("-") or "recipe"
+
+
+def _find_video_dir(video_id: str) -> Path | None:
+    """The existing folder whose pipeline.json belongs to this video, if any."""
+    for path in OUTPUT_DIR.glob("*/pipeline.json"):
+        try:
+            if json.loads(path.read_text())["video"]["id"] == video_id:
+                return path.parent
+        except (json.JSONDecodeError, KeyError):
+            continue
+    return None
+
+
+def _new_video_dir(state: PipelineState) -> Path:
+    """Pick a folder named after the video title; add the video ID only if that name is taken."""
+    path = OUTPUT_DIR / slugify(state.video.title)
+    return path if not path.exists() else path.with_name(f"{path.name}-{state.video.id}")
+
+
 def video_dir(url: str) -> Path:
-    """Directory holding every step's output for this video."""
-    return OUTPUT_DIR / video_id_from_url(url)
+    """Directory holding every step's output for this video (named after its title)."""
+    video_id = video_id_from_url(url)
+    path = _find_video_dir(video_id)
+    if path is None:
+        raise SystemExit(f"No output folder for video {video_id}. Run extract_video_data.py on this URL first.")
+    return path
 
 
 def state_path(url: str) -> Path:
@@ -47,14 +76,12 @@ def state_path(url: str) -> Path:
 
 
 def load_state(url: str) -> PipelineState:
-    path = state_path(url)
-    if not path.exists():
-        raise SystemExit(f"{path} not found. Run extract_video_data.py on this URL first.")
-    return PipelineState.model_validate_json(path.read_text())
+    return PipelineState.model_validate_json(state_path(url).read_text())
 
 
 def save_state(url: str, state: PipelineState) -> Path:
-    path = state_path(url)
-    path.parent.mkdir(parents=True, exist_ok=True)
+    folder = _find_video_dir(video_id_from_url(url)) or _new_video_dir(state)
+    folder.mkdir(parents=True, exist_ok=True)
+    path = folder / "pipeline.json"
     path.write_text(state.model_dump_json(indent=2))
     return path

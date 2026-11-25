@@ -1,33 +1,33 @@
-"""Provider-agnostic LLM client.
+"""complete(): send a prompt, get back a validated Pydantic object.
 
-Talks to any OpenAI-compatible endpoint (Ollama Cloud, Groq, Gemini, OpenRouter,
-local Ollama). Switch providers by setting these in .env:
+Which model answers is decided by the provider chain (see chain.py and .env.example);
+nothing here depends on a specific provider.
 
-    LLM_BASE_URL   default: https://ollama.com/v1
-    LLM_MODEL      default: gpt-oss:120b
-    LLM_API_KEY    falls back to OLLAMA_API_KEY
-    LLM_TEMPERATURE default: 0 (extraction should be repeatable, not creative)
+    LLM_TEMPERATURE  default: 0 (extraction should be repeatable, not creative)
 """
 
 import json
 import os
 import re
 
-from dotenv import load_dotenv
-from openai import OpenAI
 from pydantic import BaseModel, ValidationError
 
-load_dotenv()
+from .chain import ProviderChain
 
-BASE_URL = os.getenv("LLM_BASE_URL", "https://ollama.com/v1")
-MODEL = os.getenv("LLM_MODEL", "gpt-oss:120b")
-API_KEY = os.getenv("LLM_API_KEY") or os.getenv("OLLAMA_API_KEY")
 TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0"))
-
-_client = OpenAI(base_url=BASE_URL, api_key=API_KEY)
 
 # Models sometimes wrap JSON in ```json fences despite instructions.
 _FENCE = re.compile(r"^```(?:json)?\s*|\s*```$")
+
+_chain: ProviderChain | None = None
+
+
+def _chat(messages: list[dict]) -> str:
+    """One chat call through the chain, built on first use so importing never fails."""
+    global _chain
+    if _chain is None:
+        _chain = ProviderChain.from_env()
+    return _FENCE.sub("", _chain.chat(messages, TEMPERATURE))
 
 
 def complete[T: BaseModel](prompt: str, schema: type[T], system: str = "", retries: int = 2) -> T:
@@ -48,13 +48,13 @@ def complete[T: BaseModel](prompt: str, schema: type[T], system: str = "", retri
     })
 
     for attempt in range(retries + 1):
-        reply = _client.chat.completions.create(model=MODEL, messages=messages, temperature=TEMPERATURE)
-        content = _FENCE.sub("", (reply.choices[0].message.content or "").strip())
+        content = _chat(messages)
         try:
             return schema.model_validate_json(content)
         except ValidationError as e:
             if attempt == retries:
-                raise
+                raise SystemExit(f"LLM error: the model returned invalid {schema.__name__} JSON "
+                                 f"{retries + 1} times in a row.\n{e}") from None
             messages.append({"role": "assistant", "content": content})
             messages.append({
                 "role": "user",
