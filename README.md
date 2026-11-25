@@ -22,7 +22,7 @@ flowchart TD
 
     classDef llm fill:#dbe8fb,stroke:#2f6fd6,stroke-width:2px,color:#111
     classDef stop fill:#fbe3e3,stroke:#c0392b,color:#111
-    class S2,S4,S5 llm
+    class S2,S4,S5,S6 llm
     class STOP stop
 ```
 
