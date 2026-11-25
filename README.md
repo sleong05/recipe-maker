@@ -20,13 +20,15 @@ flowchart TD
     S6["6. Render PDF<br/><small>Jinja2</small>"] --> PDF([One-page recipe card PDF])
     S6 -- "overflows at 8.5 pt →<br/>LLM condenses, up to 2x" --> S6
 
-    classDef llm fill:#e3edfb,stroke:#2f6fd6,stroke-width:2px
-    classDef stop fill:#fbe3e3,stroke:#c0392b
+    classDef llm fill:#dbe8fb,stroke:#2f6fd6,stroke-width:2px,color:#111
+    classDef stop fill:#fbe3e3,stroke:#c0392b,color:#111
     class S2,S4,S5 llm
     class STOP stop
 ```
 
 Shaded steps call the LLM through the provider chain (`complete(prompt, schema)`: Gemini free → Groq → OpenRouter → Gemini paid, skipping any provider that fails); step 6 calls it only to condense. The rest is plain code. Every step reads and extends `output/<title>/pipeline.json`.
+
+The provider chain exists so the project costs nothing to run and keeps working as free tiers change. Free providers go first and the paid Gemini key is a last resort. If a free tier is cut (as Ollama Cloud's was in Oct 2026) or a provider goes down, the pipeline moves on to the next one. Adding another provider or a local model is one new class, with no change to the steps.
 
 ## Steps and decisions
 
